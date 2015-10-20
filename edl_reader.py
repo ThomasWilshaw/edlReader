@@ -4,18 +4,9 @@
 #
 
 import helper, os, sys, getopt
+import edl as edlImp
 
-def createEDLData(path):
-    #returns each line and the path to the origional edl
-    #Sets up data to be read by EDL class form .edl file
-    file = open(path, 'r')
-    data = []
-    for line in file.readlines():
-        if line != '\n':
-            data.append(line)
 
-    file.close()
-    return data, path
 
 def isInt(s):
     #suppresses vlue errors
@@ -157,7 +148,7 @@ def main(argv):
             
         elif opt == '-i':
             input_edl = str(arg)
-            a = createEDLData(input_edl)
+            a = edlImp.importEDL(input_edl)
             edl = EDL(a)
    
         elif opt == '--blender':
@@ -168,9 +159,9 @@ if __name__ == "__main__":
    main(sys.argv[1:])
 
    
-a = createEDLData("C:/Users/Tom/Documents/EDL_reader/testEDL.edl")
-edl = EDL(a)
-print(edl.getTitle())
-print(edl.getShotInfo(3).getAllData())
-print(edl.getShotInfo(3).getClipName())
-print(edl.createBlenderEDL())
+#a = createEDLData("C:/Users/Tom/Documents/EDL_reader/testEDL.edl")
+#edl = EDL(a)
+#print(edl.getTitle())
+#print(edl.getShotInfo(3).getAllData())
+#print(edl.getShotInfo(3).getClipName())
+#print(edl.createBlenderEDL())

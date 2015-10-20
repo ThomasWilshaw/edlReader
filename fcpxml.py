@@ -172,7 +172,7 @@ def importFCPXML(file):
                         clip[0] = clip[0] - helper.getSecond(sequence.attrib['tcStart'])
 
         print('FCPXML import successful.')
-
+        #timeline: globalStart, clipStart, duration, name
         return projectName, timeline
 
 def createFCPXMLData():
