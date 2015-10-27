@@ -30,6 +30,7 @@ def importFCPXML(file):
         #dict: id:[filename, origional_Src, duration]
         resources = doc.xpath('//resources')[0]
         resourceDict = {}
+        formatDict = {}
         for child in resources.getchildren():
             if(child.tag == 'asset'):
                 data = []
@@ -38,6 +39,14 @@ def importFCPXML(file):
                 data.append(child.attrib['src'])
                 data.append(child.attrib['duration'])
                 resourceDict[ID] = data
+            if child.tag == 'format':
+                data = []
+                ID = child.attrib['id']
+                data.append(child.attrib['width'])
+                data.append(child.attrib['height'])
+                data.append(child.attrib['frameDuration'])
+                data.append(child.attrib['name'])
+                formatDict[ID] = data
 
         ###name###
         project = doc.xpath('//project')[0]
@@ -56,6 +65,10 @@ def importFCPXML(file):
         sequenceData.append(formt)
         sequenceData.append(helper.getSecond(sequence.attrib['duration']))
         sequenceData.append(helper.getSecond(sequence.attrib['tcStart']))
+
+        ###get format and duration###
+        timelineFormat = formatDict[sequence.attrib['format']]
+        timelineDuration = helper.getSecond(sequence.attrib['duration'])
 
         ###Main timeline datat collection###
         timelineData = doc.xpath('//spine')[0]
@@ -96,7 +109,9 @@ def importFCPXML(file):
                     flag = 'b'
 
             elif child.tag == 'gap':
-                    flag = 'b'    
+                    flag = 'b'
+                    print("GAAAAAAAAP")
+                    start = helper.getSecond(child.attrib['start'])
 
             if flag == 'a':
 
@@ -164,6 +179,33 @@ def importFCPXML(file):
                                                 for i in range(trackNum-n):
                                                     timeline.append([])
                                                 timeline[trackNum].append(temp2)
+
+                    elif child.find('clip') is not None:
+                            for intChild in child:
+                                    temp2 = []
+                                    trackNum = 0
+                                    if intChild.tag == 'clip' and intChild.attrib['name'].split('.')[-1] in ('mov'):
+                                            intGlobalStart = (helper.getSecond(child.attrib['offset']))
+                                            clipStart = helper.getSecond(intChild.attrib['start']) - helper.getSecond(intChild.find('video').attrib['start'])
+                                            duration = helper.getSecond(intChild.attrib['duration'])
+                                            name = intChild.attrib['name']
+                            
+                                            temp2.append(intGlobalStart)
+                                            temp2.append(clipStart)
+                                            temp2.append(duration)
+                                            temp2.append(name)
+                           
+                                            lane = int(intChild.attrib['lane']) #find lane number
+
+                                            trackNum = trackNum + lane
+
+                                            try: #add to correct track. Add track if doesn't exist
+                                                timeline[trackNum].append(temp2)
+                                            except:
+                                                n = len(timeline)-1
+                                                for i in range(trackNum-n):
+                                                    timeline.append([])
+                                                timeline[trackNum].append(temp2)
                                             
                             
         #remove timeline offset from globalStart
@@ -172,12 +214,78 @@ def importFCPXML(file):
                         clip[0] = clip[0] - helper.getSecond(sequence.attrib['tcStart'])
 
         print('FCPXML import successful.')
+        #print(timeline)
         #timeline: globalStart, clipStart, duration, name
-        return projectName, timeline
+        return projectName, timeline, timelineFormat, timelineDuration
 
-def createFCPXMLData():
+def createFCPXMLData(data):
         #Sets up data to be read by EDL class form .fcpxml file
-        return
+        #srolls through time and always picks top shot
+        ###WATCH OUT FOR FLOAT CRAP!!!####
+        fps = helper.getSecond(data[2][2])
+        totalTime = data[3]
+        time = 0 #global time
+        out = [] #datat to be returned
+        running = [] #active clips
+        currentClip = []
+        previousClip = []
+        timeline = data[1]
+        lines = len(timeline)
+        
+
+
+        #print(data[1])
+        #print(compare, top)
+        while time < totalTime:
+                
+                
+                for line in range(lines):
+                        for clip in timeline[line]:
+                                if time-0.0001 <= clip[0] <= time+0.0001: ###dodgy could do all in frames?
+                                        running.append([clip, line])
+
+                #flush active clips
+                for clip in running:
+                        if clip[0][2] + clip[0][0] <= time:
+                                running.remove(clip)
+
+                #find highest current clip
+                highest = 0
+                for clip in running:
+                        if clip[1] > highest:
+                                highest = clip[1]
+
+                #append clip if differnet to previous frame
+                for clip in running:
+                        if clip[1] == highest:
+                                currentClip = clip   
+                        if currentClip != previousClip:
+                                previousClip = currentClip
+                                #print(out)
+                                #pass
+                                out.append(currentClip)     
+                                        
+                #print(highest)
+                time = time+fps
+
+        edl = []
+        edl.append(out[0][0])
+        for i in range(1, len(out)):
+                if out[i][0][0] == edl[i-1][0]:
+                        out[i][0][0] = out[i][0][0] + edl[i-1][2]
+                        out[i][0][2] = out[i][0][2] - edl[i-1][2] 
+                
+                if out[i][0][0] < edl[i-1][2] + edl[i-1][0]:
+                        edl[i-1][2] = out[i][0][0] - edl[i-1][0]
+
+                edl.append(out[i][0])
+                
+                
+        return edl
 
 if __name__ == '__main__':
-        data = importFCPXML('Afrobeats_davinci_owain.fcpxml')
+        data = importFCPXML('C:/Users/Tom/Documents/EDL_reader/DavinciTests/Afrobeats_davinci_owain.fcpxml')
+        data = createFCPXMLData(data)
+        for i in data:
+                print('\n', i)
+

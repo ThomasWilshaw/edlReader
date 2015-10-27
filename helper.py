@@ -9,6 +9,9 @@ def TimeCodeToFrames(tc):
     raw_frames = hours + minutes + seconds + frames
     return raw_frames
 
+def secondsToFrames(s, fps):
+    return s*fps
+
 def isInt(s):
     #suppresses vlue errors
     try:

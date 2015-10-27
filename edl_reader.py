@@ -34,32 +34,18 @@ class Shot(object):
     def getAllData(self):
         return self.shotData
 
-    def getNumber(self):
-        return self.shotData[0].split()[0]
+    def getGlobalStart(self):
+        return self.shotData[0]
 
-    def getReelName(self):
-        return self.shotData[0].split()[1]
+    def getClipStart(self):
+        return self.shotData[1]
 
-    def getChannels(self):
-        return self.shotData[0].split()[2]
+    def getDuration(self):
+        return self.shotData[2]
 
-    def getTransition(self):
-        return self.shotData[0].split()[3]
 
-    def getSourceIn(self):
-        return {'SMPTE' : self.shotData[0].split()[4], 'Frames' : helper.TimeCodeToFrames(self.shotData[0].split()[4])}
-
-    def getSourceOut(self):
-        return {'SMPTE' : self.shotData[0].split()[5], 'Frames' : helper.TimeCodeToFrames(self.shotData[0].split()[5])}
-
-    def getEditIn(self):
-        return {'SMPTE' : self.shotData[0].split()[6], 'Frames' : helper.TimeCodeToFrames(self.shotData[0].split()[6])}
-
-    def getEditOut(self):
-        return {'SMPTE' : self.shotData[0].split()[7], 'Frames' : helper.TimeCodeToFrames(self.shotData[0].split()[7])}
-
-    def getClipName(self):
-        return self.shotData[1].split(':')[1].lstrip().strip('\n')
+    def getName(self):
+        return self.shotData[3]
 
 
 
@@ -70,36 +56,19 @@ class EDL(object):
     def __init__(self, data):
         self.data = data[0] #main data
         self.path = data[1]
+        self.title = data[1]
         print ("\n\n\n", data, "\n\n\n")
 
-        for i in range(len(self.data)-1, 0, -1): #find last shot in edl
-            if isInt(self.data[i][:3]) != None:
-                self.lastShot = isInt(self.data[i][:3])
-                break
+        self.lastShot = len(self.data)
 
     def getTitle(self):
-        return self.data[0]
+        return self.title
 
     def getShotInfo(self, number):
         if (number > self.lastShot or number < 1): #check requested shot is within bounds
             raise ValueError('Shot %s out of bounds, max = %s, min = 1' % (number, self.lastShot))
-
-        lineNumber = 0
-        shot = []
-        rightShot = 0
-        for line in self.data: 
-            if isInt(line[:3]) == number and rightShot == 0:
-                shot.append(line)
-                rightShot = 1
-            elif rightShot == 1 and isInt(line[:3]) != number+1:
-                shot.append(line)
-            elif rightShot == 1 and isInt(line[:3]) == number+1:
-                break
-            else:
-                continue
-            lineNumber = lineNumber + 1
         
-        return Shot(shot)
+        return Shot(self.data[number-1])
 
     def createBlenderEDL(self):
         path = str(input("\nFile path of footage: "))
@@ -156,12 +125,13 @@ def main(argv):
 
 
 if __name__ == "__main__":
-   main(sys.argv[1:])
+   
 
    
-#a = createEDLData("C:/Users/Tom/Documents/EDL_reader/testEDL.edl")
-#edl = EDL(a)
-#print(edl.getTitle())
-#print(edl.getShotInfo(3).getAllData())
-#print(edl.getShotInfo(3).getClipName())
-#print(edl.createBlenderEDL())
+    a = edlImp.importEDL("C:/Users/Tom/Documents/EDL_reader/testEDL.edl")
+    a = edlImp.createEDLData(a)
+    edl = EDL(a)
+    print(edl.getTitle())
+    print(edl.getShotInfo(3).getAllData())
+    print(edl.getShotInfo(3).getName())
+    #print(edl.createBlenderEDL())
