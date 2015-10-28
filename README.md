@@ -1,5 +1,5 @@
 # edlReader
-A simple command line tool to convert EDL's to and from differnet formats.
+A simple command line tool to convert EDL's to and from different formats.
 
 Currently supports .edl 
 
